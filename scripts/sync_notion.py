@@ -35,6 +35,7 @@ import time
 import html as htmlmod
 import urllib.request
 import urllib.error
+from datetime import datetime, timezone, timedelta
 
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN", "").strip()
 DATABASE_ID = os.environ.get("DATABASE_ID", "").strip()
@@ -247,6 +248,24 @@ def build_evidence(pages):
             "}"
         )
     return "[\n " + ",\n ".join(lines) + "\n]"
+
+
+def kst_today_str():
+    """실행 시점(스크립트가 돌아간 날) 기준 한국시간(KST) 날짜를 YYYY-MM-DD로 반환"""
+    now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
+    return now_kst.strftime("%Y-%m-%d")
+
+
+def sync_footer_date(html):
+    """footer의 '데이터 기준일 YYYY-MM-DD'를 오늘 날짜(KST)로 자동 갱신"""
+    today = kst_today_str()
+    pattern = re.compile(r"데이터 기준일 \d{4}-\d{2}-\d{2}")
+    new_html, n = pattern.subn(f"데이터 기준일 {today}", html, count=1)
+    if n == 0:
+        print("[WARN] '데이터 기준일' 표기를 찾지 못해 갱신을 건너뜁니다.")
+        return html
+    print(f"[INFO] 데이터 기준일을 {today}로 갱신했습니다.")
+    return new_html
 
 
 def replace_block(html, var_name, new_array_literal):
@@ -586,6 +605,8 @@ def main():
     else:
         print("[INFO] PAGE_ID가 설정되지 않아 페이지 본문(Executive Snapshot 등) "
               "동기화는 건너뜁니다.")
+
+    html = sync_footer_date(html)
 
     with open(INDEX_HTML, "w", encoding="utf-8") as f:
         f.write(html)
