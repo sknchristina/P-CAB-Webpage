@@ -34,14 +34,34 @@ jobs:
         run: python scripts/sync_notion.py
 
       - name: Commit and push if changed
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          DATABASE_ID: 'fe11fe2ad0c54c5994149a29e07b572d'
+          INDEX_HTML: 'index.html'
         run: |
           git config user.name "pcab-sync-bot"
           git config user.email "actions@users.noreply.github.com"
+
           if git diff --quiet -- index.html; then
             echo "변경 사항 없음 - 커밋 생략"
-          else
-            git add index.html
-            git commit -m "chore: sync P-CAB evidence from Notion ($(date -u +'%Y-%m-%d %H:%M UTC'))"
-            git pull --rebase origin main
-            git push
+            exit 0
           fi
+
+          for attempt in 1 2 3; do
+            echo "=== push 시도 $attempt/3 ==="
+            git add index.html
+            git commit -m "chore: sync P-CAB evidence from Notion ($(date -u +'%Y-%m-%d %H:%M UTC'))" || true
+
+            if git push; then
+              echo "push 성공"
+              exit 0
+            fi
+
+            echo "push 실패 - 최신 원격 내용을 기준으로 재정렬 후 재생성합니다."
+            git fetch origin main
+            git reset --hard origin/main
+            python scripts/sync_notion.py
+          done
+
+          echo "3회 시도 후에도 push 실패"
+          exit 1
