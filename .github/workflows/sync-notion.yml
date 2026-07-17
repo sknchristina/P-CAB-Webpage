@@ -30,6 +30,7 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           DATABASE_ID: 'fe11fe2ad0c54c5994149a29e07b572d'
+          PAGE_ID: '39f9a76bfca681c6ad85d4043bf1a902'
           INDEX_HTML: 'index.html'
         run: python scripts/sync_notion.py
 
@@ -37,6 +38,7 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           DATABASE_ID: 'fe11fe2ad0c54c5994149a29e07b572d'
+          PAGE_ID: '39f9a76bfca681c6ad85d4043bf1a902'
           INDEX_HTML: 'index.html'
         run: |
           git config user.name "pcab-sync-bot"
