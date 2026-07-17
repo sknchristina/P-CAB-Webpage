@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P-CAB 현황 및 임상적 시사점 | Evidence Landscape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@500;600;700&display=swap">
+<style>
+  :root{
+    --navy:#0f2748; --navy2:#1b3a66; --teal:#12305a; --teal-soft:#e9eef7;
+    --orange:#f26a1b; --gold:#c07a2a; --ink:#2a3340; --muted:#6f6a63; --line:#f1e3d1;
+    --bg:#fff1e0; --card:#ffffff;
+    --green:#2f9e5f; --amber:#c9822b;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.65; -webkit-font-smoothing:antialiased;
+    font-feature-settings:"tnum" 1;
+  }
+  h1,h2.sec-title,.bottomline h3,.icard h3,.ecard h4{font-family:"Noto Serif KR",serif;}
+  h2.sec-title .en{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",sans-serif;}
+  a{color:var(--teal); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 22px;}
+  .section{padding:46px 0;}
+  h2.sec-title{font-size:1.42rem; margin:0 0 6px; color:var(--navy); letter-spacing:-.01em;}
+  h2.sec-title .en{display:block; font-size:.72rem; font-weight:700; letter-spacing:.14em; color:var(--orange); text-transform:uppercase; margin-bottom:6px;}
+  .sec-desc{color:var(--muted); font-size:.92rem; margin:0 0 22px; max-width:820px;}
+
+  /* Hero */
+  header.hero{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 55%,#24406e 100%);
+    color:#fff; padding:56px 0 44px; position:relative; overflow:hidden;
+  }
+  header.hero::after{content:""; position:absolute; right:-90px; top:-90px; width:340px; height:340px; border-radius:50%; background:rgba(242,106,27,.32);}
+  .hero .eyebrow{font-size:.74rem; letter-spacing:.2em; text-transform:uppercase; color:#ff9a4d; font-weight:700;}
+  .hero h1{font-size:2.15rem; margin:.35em 0 .3em; letter-spacing:-.02em;}
+  .hero p.lead{font-size:1.02rem; color:#d6e2ef; max-width:760px; margin:0;}
+  .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:34px;}
+  .kpi{background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); border-radius:14px; padding:16px 18px; backdrop-filter:blur(2px);}
+  .kpi .num{font-size:1.4rem; font-weight:600; color:#fff; line-height:1.15; letter-spacing:-.02em;}
+  .kpi .lbl{font-size:.8rem; color:#bcd0e4; margin-top:3px;}
+
+  /* Category bars */
+  .catgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px 26px;}
+  .catrow{display:flex; align-items:center; gap:12px;}
+  .catrow .cn{width:150px; font-size:.9rem; font-weight:600; color:var(--navy); flex-shrink:0;}
+  .catrow .bar{flex:1; height:12px; background:#eef1f5; border-radius:8px; overflow:hidden;}
+  .catrow .fill{height:100%; background:linear-gradient(90deg,#0f2748,#3a5b8c); border-radius:8px;}
+  .catrow .cv{width:42px; text-align:right; font-weight:700; color:var(--teal); font-size:.9rem;}
+  .note{font-size:.8rem; color:var(--muted); margin-top:14px; padding-left:12px; border-left:3px solid var(--teal-soft);}
+
+  /* Cards grid */
+  .cards3{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  .icard{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; box-shadow:0 1px 2px rgba(16,30,54,.04);}
+  .icard h3{margin:0 0 12px; font-size:1rem; color:var(--navy); display:flex; align-items:center; gap:8px;}
+  .icard ul{margin:0; padding-left:18px;}
+  .icard li{font-size:.88rem; color:#38414f; margin-bottom:7px;}
+  .icard.accent-top{border-top:3px solid var(--orange);}
+
+  /* Table */
+  table.evmap{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:.9rem;}
+  table.evmap th{background:var(--navy); color:#fff; text-align:left; padding:13px 16px; font-weight:600; font-size:.85rem;}
+  table.evmap td{padding:12px 16px; border-top:1px solid var(--line); vertical-align:top;}
+  table.evmap tr:nth-child(even) td{background:#fafbfc;}
+  .lvl{font-weight:700; white-space:nowrap;}
+  .lvl.high{color:var(--green);} .lvl.mid{color:var(--amber);}
+  td.area{font-weight:700; color:var(--navy); white-space:nowrap;}
+
+  /* Watchlist */
+  .watch{display:grid; grid-template-columns:repeat(2,1fr); gap:10px 24px;}
+  .witem{display:flex; align-items:flex-start; gap:10px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:.9rem;}
+  .witem .dot{width:9px; height:9px; border-radius:50%; background:var(--orange); margin-top:7px; flex-shrink:0;}
+
+  /* Evidence gallery */
+  .filterbar{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;}
+  .fbtn{border:1px solid var(--line); background:#fff; color:var(--muted); padding:7px 15px; border-radius:20px; font-size:.85rem; cursor:pointer; font-family:inherit; transition:all .15s;}
+  .fbtn:hover{border-color:var(--teal); color:var(--teal);}
+  .fbtn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .gallery{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+  .ecard{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 20px; display:flex; flex-direction:column; box-shadow:0 1px 2px rgba(16,30,54,.04); transition:box-shadow .15s,transform .15s;}
+  .ecard:hover{box-shadow:0 6px 18px rgba(16,30,54,.09); transform:translateY(-2px);}
+  .ecard .toprow{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;}
+  .tag{font-size:.72rem; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap;}
+  .tag.paper{background:#e8f1fb; color:#2a6ebd;}
+  .tag.trial{background:#fdf0e3; color:#c07b1e;}
+  .tag.guide{background:#eaf6ee; color:#2f8b52;}
+  .ecard .date{font-size:.76rem; color:var(--muted);}
+  .ecard h4{margin:0 0 8px; font-size:.96rem; line-height:1.4; color:var(--navy);}
+  .ecard .meta{font-size:.78rem; color:var(--muted); margin-bottom:10px;}
+  .ecard .meta b{color:#38414f; font-weight:600;}
+  .ecard .cats{display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px;}
+  .ecard .cat{font-size:.68rem; background:var(--teal-soft); color:var(--teal); padding:2px 8px; border-radius:12px;}
+  .ecard .abs{font-size:.84rem; color:#465162; flex:1;}
+  .ecard .abs.clamp{display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden;}
+  .ecard .cardfoot{margin-top:12px; display:flex; justify-content:space-between; align-items:center;}
+  .ecard .pmid{font-size:.72rem; color:var(--muted);}
+  .toggle{background:none; border:none; color:var(--teal); font-size:.8rem; cursor:pointer; padding:0; font-family:inherit;}
+  .src-link{font-size:.8rem; font-weight:600;}
+
+  /* Bottom line */
+  .bottomline{background:linear-gradient(135deg,var(--navy),#1b3a66); color:#fff; border-radius:16px; padding:32px 34px;}
+  .bottomline h3{margin:0 0 12px; font-size:1.15rem; display:flex; align-items:center; gap:8px;}
+  .bottomline p{margin:0; color:#dbe6f1; font-size:.96rem; line-height:1.75;}
+
+  footer{background:var(--navy); color:#9fb2c8; padding:26px 0; font-size:.8rem;}
+  footer a{color:#bcd0e4;}
+
+  @media(max-width:860px){
+    .kpis,.cards3,.catgrid,.watch,.gallery{grid-template-columns:1fr;}
+    .hero h1{font-size:1.7rem;}
+    table.evmap{font-size:.82rem;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">🦅 P-CAB Evidence Landscape</div>
+    <h1>P-CAB 현황 및 임상적 시사점</h1>
+    <p class="lead">최신 임상논문·임상시험·진료지침을 기반으로 P-CAB(칼륨경쟁적 위산분비억제제)의 근거 축적 현황과 임상적 시사점을 정리합니다.</p>
+    <div class="kpis">
+      <div class="kpi"><div class="num">77건</div><div class="lbl">P-CAB 관련 문헌</div></div>
+      <div class="kpi"><div class="num">3개 유형</div><div class="lbl">임상논문 · 임상시험 · 진료지침</div></div>
+      <div class="kpi"><div class="num">2026-07-16</div><div class="lbl">최근 DB 등록일</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- Evidence Categories -->
+<section class="section">
+  <div class="wrap">
+    <h2 class="sec-title"><span class="en">Evidence Categories</span>문헌 카테고리 분포</h2>
+    <p class="sec-desc">데이터베이스의 <code>카테고리</code> 값 기준 집계입니다. 하나의 문헌에 여러 카테고리가 지정될 수 있어 합계는 전체 문헌 수와 일치하지 않을 수 있습니다.</p>
+    <div class="catgrid" id="catgrid"></div>
+    <p class="note">🏷️ 수치는 각 카테고리에 태깅된 문헌 건수이며, 중복 태깅으로 합계가 전체 문헌 수를 초과할 수 있습니다.</p>
+  </div>
+</section>
+
+<!-- Executive Snapshot -->
+<section class="section" style="background:#ffe6cc;">
+  <div class="wrap">
+    <h2 class="sec-title"><span class="en">Executive Snapshot</span>핵심 요약</h2>
+    <div class="cards3">
+      <div class="icard accent-top">
+        <h3>📈 Evidence Direction</h3>
+        <ul>
+          <li>초기 치료뿐 아니라 유지요법·온디맨드 치료로 연구 범위 확대</li>
+          <li>H. pylori 제균요법 및 PPI 불충분 반응 환자 관련 근거 축적</li>
+          <li>실제 진료 데이터와 장기 안전성 자료의 중요성 증가</li>
+        </ul>
+      </div>
+      <div class="icard accent-top">
+        <h3>💡 Clinical Focus</h3>
+        <ul>
+          <li>빠르고 지속적인 산 억제가 필요한 임상상황</li>
+          <li>질환 표현형과 치료 단계에 따른 환자 선별</li>
+          <li>초기 치료, 유지요법, 증상 조절을 구분한 근거 해석</li>
+        </ul>
+      </div>
+      <div class="icard accent-top">
+        <h3>⚠️ Interpretation Caution</h3>
+        <ul>
+          <li>계열 효과와 개별 성분 근거를 구분</li>
+          <li>간접비교 순위를 통계적 우월성으로 해석하지 않음</li>
+          <li>허가사항, 진료지침, 연구 결과의 근거 층위를 구분</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Evidence Map -->
+<section class="section">
+  <div class="wrap">
+    <h2 class="sec-title"><span class="en">P-CAB Evidence Map</span>임상영역별 근거 지도</h2>
+    <table class="evmap">
+      <thead>
+        <tr><th>임상영역</th><th>근거 축적도</th><th>주요 평가 포인트</th><th>임상적 해석</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="area">ERD 초기 치료</td><td><span class="lvl high">🟢 높음</span></td><td>치유율, 증상 개선, 초기 산 억제</td><td>P-CAB의 핵심 근거 영역</td></tr>
+        <tr><td class="area">GERD 유지요법</td><td><span class="lvl mid">🟡 중간–높음</span></td><td>재발 방지, 유지 용량, 치료 기간</td><td>장기 치료 전략과 안전성 함께 평가</td></tr>
+        <tr><td class="area">NERD</td><td><span class="lvl mid">🟡 중간</span></td><td>증상 반응, 표현형, 비산성 역류</td><td>환자 이질성이 커 진단 재평가가 중요</td></tr>
+        <tr><td class="area">H. pylori 제균</td><td><span class="lvl mid">🟡 중간–높음</span></td><td>제균율, 항생제 조합, 지역별 내성</td><td>요법 전체 구성과 지역적 맥락을 함께 고려</td></tr>
+        <tr><td class="area">위궤양</td><td><span class="lvl mid">🟡 중간</span></td><td>치유율, 출혈·재발, NSAID 관련성</td><td>국가별 허가와 지침 차이를 별도 확인</td></tr>
+        <tr><td class="area">PPI 불충분 반응</td><td><span class="lvl mid">🟡 중간</span></td><td>전환 효과, 복약순응도, 진단 정확성</td><td>일률적 전환보다 원인 감별과 환자 선별이 우선</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Clinical Implications -->
+<section class="section" style="background:#ffe6cc;">
+  <div class="wrap">
+    <h2 class="sec-title"><span class="en">Clinical Implications</span>관점별 시사점</h2>
+    <div class="cards3">
+      <div class="icard">
+        <h3>🩺 진료 관점</h3>
+        <ul>
+          <li>단순히 '더 강한 위산분비억제제'로 설명하기보다, <b>빠르고 안정적인 산 억제가 필요한 임상상황</b>을 구체화합니다.</li>
+          <li>초기 치료, 유지요법, 온디맨드 치료를 구분하여 근거를 적용합니다.</li>
+          <li>치료 반응이 불충분한 경우 비순응, 기능성 증상, 비산성 역류 등 다른 원인을 재평가합니다.</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <h3>🧪 Medical Affairs 관점</h3>
+        <ul>
+          <li>허가사항, 진료지침, 임상시험, RWE를 각각 구분하여 제시합니다.</li>
+          <li>efficacy뿐 아니라 onset, dosing consistency, adherence, long-term safety를 함께 평가합니다.</li>
+          <li>새로운 적응증 가능성과 현재 허가 범위를 명확히 분리합니다.</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <h3>✍️ Medical Writing 관점</h3>
+        <ul>
+          <li>P-CAB class effect와 개별 성분의 직접 근거를 구분합니다.</li>
+          <li>비열등성 결과를 우월성으로 확대 해석하지 않습니다.</li>
+          <li>P-score·SUCRA 등 순위 지표는 효과크기와 신뢰구간을 함께 제시합니다.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Watchlist -->
+<section class="section">
+  <div class="wrap">
+    <h2 class="sec-title"><span class="en">Strategic Watchlist</span>전략적 관찰 항목</h2>
+    <div class="watch">
+      <div class="witem"><span class="dot"></span>국내외 GERD 진료지침 업데이트</div>
+      <div class="witem"><span class="dot"></span>P-CAB 성분 간 head-to-head study</div>
+      <div class="witem"><span class="dot"></span>장기 유지요법 및 재발률</div>
+      <div class="witem"><span class="dot"></span>NERD 및 PPI-refractory symptom</div>
+      <div class="witem"><span class="dot"></span>H. pylori 제균요법</div>
+      <div class="witem"><span class="dot"></span>고령자·다약제 복용 환자 안전성</div>
+      <div class="witem"><span class="dot"></span>장기 hypergastrinemia 관련 데이터</div>
+      <div class="witem"><span class="dot"></span>실제 진료 데이터 및 처방 패턴</div>
+    </div>
+  </div>
+</section>
+
+<!-- Latest Evidence -->
+<section class="section" style="background:#ffe6cc;">
+  <div class="wrap">
+    <h2 class="sec-title"><span class="en">Latest P-CAB Evidence</span>최신 P-CAB 근거</h2>
+    <p class="sec-desc">'위산분비질환 문헌 업데이트' 데이터베이스에서 <code>P-CAB</code> 카테고리 문헌을 출판일 최신순으로 표시합니다. 유형 버튼으로 필터링할 수 있습니다.</p>
+    <div class="filterbar filterbar" id="filterbar"></div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</section>
+
+<!-- Bottom line -->
+<section class="section">
+  <div class="wrap">
+    <div class="bottomline">
+      <h3>🎯 Bottom Line</h3>
+      <p>P-CAB 관련 근거는 초기 치료를 넘어 유지요법, 제균요법, 불충분 반응 환자 및 실제 진료 영역으로 확대되고 있습니다. 근거 해석 시에는 질환 표현형, 치료 단계, 허가 범위 및 개별 성분의 직접 근거를 구분해야 합니다. 향후에는 단순한 계열 비교보다 환자 특성과 임상적 unmet need를 중심으로 근거를 통합하는 접근이 중요합니다.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    출처: <a href="https://app.notion.com/p/39f9a76bfca681c6ad85d4043bf1a902" target="_blank">🦅 P-CAB 현황 및 임상적 시사점 (Notion)</a> · 데이터 기준일 2026-07-16<br>
+    본 자료는 학술적 정보 정리 목적이며, 특정 제품의 처방을 권고하지 않습니다. 근거 해석 시 허가사항과 최신 진료지침을 함께 확인하십시오.
+  </div>
+</footer>
+
+<script>
+// ---- Category distribution ----
+const categories=[
+  {n:"Helicobacter pylori",v:140},{n:"동반질환",v:115},{n:"GERD",v:112},
+  {n:"PPI",v:84},{n:"P-CAB",v:77},{n:"위염",v:57},{n:"위궤양(GU)",v:28},{n:"ERD",v:18}
+];
+const maxV=Math.max(...categories.map(c=>c.v));
+document.getElementById("catgrid").innerHTML=categories.map(c=>`
+  <div class="catrow">
+    <div class="cn">${c.n}</div>
+    <div class="bar"><div class="fill" style="width:${(c.v/maxV*100).toFixed(1)}%"></div></div>
+    <div class="cv">${c.v}</div>
+  </div>`).join("");
+
+// ---- Evidence gallery ----
+const typeMap={ "임상논문":"paper", "임상시험":"trial", "진료지침":"guide" };
+const evidence=[
+ {title:"Vonoprazan High-Dose Dual vs Levofloxacin Concomitant Therapy for H. pylori Eradication (RCT)",type:"임상시험",journal:"ClinicalTrials.gov, Phase 4 RCT",author:"Damascus Hospital (multi-center)",cats:["Helicobacter pylori","P-CAB","위염"],pmid:"NCT07624422",link:"https://clinicaltrials.gov/study/NCT07624422",date:"2026-11-01",abs:"시리아 다마스쿠스 4상 RCT. H. pylori 감염 성인 150명에서 보노프라잔 고용량 이중요법(보노프라잔+아목시실린 14일)과 레보플록사신 병용 4제요법의 제균율·안전성을 비교. 1차 평가변수는 치료 종료 4주 후 제균 성공률. 현재 모집 전 단계로, P-CAB 기반 이중요법의 무작위대조 근거를 제공할 것으로 기대."},
+ {title:"Zastaprazan vs Lansoprazole in Patients with Gastric Ulcers (Phase 3 RCT)",type:"임상논문",journal:"Gut Liver. 2026;20(4):562-574",author:"Park KS, et al.",cats:["위궤양(GU)","P-CAB"],pmid:"PMID 41540828",link:"https://doi.org/10.5009/gnl250334",date:"2026-07-15",abs:"위궤양 환자 329명에서 신규 P-CAB 자스타프라잔 20mg과 란소프라졸 30mg을 비교한 다기관·이중맹검·활성대조 3상 RCT. Per-protocol 8주 누적 치유율은 자스타프라잔 100%(146/146), 란소프라졸 97.06%로 비열등성 입증. 이상반응 발생률은 유사, 가스트린은 치료 중 상승 후 종료 후 감소. 기존 PPI와 대등한 효능·안전성을 갖춘 대안으로 평가."},
+ {title:"Tegoprazan for Prevention of Peptic Ulcer in Long-Term NSAID Users (Phase 3 RCT)",type:"임상논문",journal:"Gut Liver. 2026;20(4):551-561",author:"Kim SG, et al.",cats:["위궤양(GU)","P-CAB"],pmid:"PMID 42325011",link:"https://doi.org/10.5009/gnl260057",date:"2026-07-15",abs:"NSAID 24주 지속 복용 환자에서 테고프라잔 25mg과 란소프라졸 15mg의 소화성궤양 예방 효과를 비교한 3상 RCT. 392명 무작위배정, 269명 PP 분석. 1차 평가변수(24주 궤양 발생률)에서 테고프라잔 비열등 입증(p=0.0004). 12주 속쓰림 없음 비율은 테고프라잔군에서 유의하게 높음(p=0.0421). 이상반응은 두 군 유사."},
+ {title:"Tegoprazan-based Dual Therapy vs Bismuth Quadruple Therapy for H. pylori (Non-inferiority RCT)",type:"임상논문",journal:"Scientific Reports. 2026",author:"Wang H, et al.",cats:["Helicobacter pylori","P-CAB"],pmid:"PMID 42457948",link:"https://doi.org/10.1038/s41598-026-62237-4",date:"2026-07-15",abs:"H. pylori 감염 400명에서 테고프라잔+아목시실린 이중요법(TA)과 테고프라잔 기반 비스무트 4제요법(TBQ)을 비교한 다기관 개방표지 비열등성 RCT. ITT 제균율 TA 87.5%, TBQ 89.5%로 TA 비열등성 입증(p=0.006). 이상반응은 TA군에서 유의하게 낮음(8.2% vs 20.1%, p<0.001). P-CAB 기반 이중요법이 이상반응을 줄이면서 유사한 제균 효과를 보일 수 있음."},
+ {title:"14-Day Tegoprazan vs Lansoprazole for Endoscopic Ulcer Healing in Bleeding Peptic Ulcers (RCT)",type:"임상시험",journal:"ClinicalTrials.gov (NCT07708545)",author:"Indonesia University",cats:["위궤양(GU)","P-CAB","PPI"],pmid:"NCT07708545",link:"https://clinicaltrials.gov/study/NCT07708545",date:"2026-07-15",abs:"인도네시아 2상 이중눈가림·이중더미 RCT. 출혈성 소화성궤양 환자 162명에서 테고프라잔 50mg과 란소프라졸 30mg의 내시경적 궤양 치유 효과를 비교. 초기 72시간 고용량 산분비억제제 및 필요시 지혈술 후 14일 치료, 15일째 완전 점막 치유율이 주요 평가변수. 출혈성 궤양에서 P-CAB과 PPI를 직접 비교하는 최초의 무작위 시험으로 계획."},
+ {title:"Evidence-Based Guidelines for Diagnosis and Treatment of H. pylori in Korea: 2025 Revised Edition",type:"진료지침",journal:"Helicobacter. 2026;31(4):e70149",author:"Bang CS, et al.",cats:["Helicobacter pylori","P-CAB"],pmid:"PMID 42439470",link:"https://doi.org/10.1111/hel.70149",date:"2026-07-13",abs:"클래리트로마이신 내성률 상승(17.8%→33.3%)과 P-CAB 도입에 따른 한국 4차 개정 가이드라인. 9개 핵심질문에 대해 SR·메타분석 후 64명 전문가 수정 델파이로 13개 중 12개 권고 합의. 맞춤치료·경험적 사제요법 이원화, 순차요법 폐지, P-CAB의 PPI 대체옵션화, 위암 예방 목적 제균 확대, 비스무트 사제요법 조건부 1차 권고 등이 주요 개정 내용."},
+ {title:"Vonoprazan-Amoxicillin Dual Therapy as Alternative to Bismuth Quadruple Therapy (SR & Meta-analysis)",type:"임상논문",journal:"J Gastroenterol Hepatol. 2026 (Epub)",author:"Passos PRC, et al.",cats:["Helicobacter pylori","P-CAB"],pmid:"PMID 42433201",link:"https://doi.org/10.1111/jgh.70565",date:"2026-07-11",abs:"아시아 18개 RCT(5,866명)에서 보노프라잔-아목시실린 이중요법(VADT)과 비스무트 4제요법(BQT)을 비교한 베이지안 비열등성 메타분석. ITT에서 VADT 근절률 +2.27%p 높고 -5%/-10% 마진 사후확률 99% 이상이나, 우월성(0%) 기준 근거수준은 중등도~매우낮음. VADT는 경미한 이상반응이 유의하게 낮음. 서구 인구로의 일반화는 근거 부족."},
+ {title:"Effect of Low-Dose Vonoprazan on Hepatic CYP450 Activity by 13C-Aminopyrine Breath Test",type:"임상논문",journal:"Med Sci Monit. 2026;32:e953332",author:"Takahashi S, et al.",cats:["P-CAB"],pmid:"PMID 42427013",link:"https://doi.org/10.12659/MSM.953332",date:"2026-07-10",abs:"건강 성인 20명(완료 19명)에서 보노프라잔 유지용량 8일 투여 전후 간 CYP 활성 변화를 13C-ABT로 평가. 보노프라잔 10mg군 DOB 곡선하면적은 대조와 유의차 없음(기하평균비 1.09, 90%CI 0.97–1.23). 유지용량 보노프라잔의 간 CYP 매개 약물상호작용 영향이 미미함을 시사하는 임상약리 근거."},
+ {title:"Review of Peptic Ulcer Disease: Pathophysiology, Mechanisms, Pharmacotherapy, and Case Reports",type:"임상논문",journal:"Drug Des Devel Ther. 2026;20:619642",author:"Pertiwi R, et al.",cats:["위궤양(GU)","Helicobacter pylori","PPI","P-CAB"],pmid:"PMID 42438796",link:"https://doi.org/10.2147/DDDT.S619642",date:"2026-07-08",abs:"소화성궤양의 병태생리·진단·치료전략 종설. H. pylori와 NSAID가 주요 병인. 현재 치료는 제균, PPI 산분비 억제, 합병증 예방에 초점을 두며, P-CAB이 신속·강력한 산분비 억제로 일부 환자에서 PPI 대안으로 부상. 출혈성 궤양은 내시경+고용량 PPI가 표준, 항생제 내성 증가에 따른 맞춤치료가 새 과제."},
+ {title:"Consensus Recommendations for Management of H. pylori in Egypt: 2026 Report",type:"진료지침",journal:"Dig Dis (Basel). 2026 (Epub)",author:"Alboraie M, et al.",cats:["Helicobacter pylori","PPI","P-CAB"],pmid:"PMID 42412729",link:"https://doi.org/10.1159/000553178",date:"2026-07-07",abs:"이집트 소화기 전문가 패널의 2026 국가 합의권고안. 역학·진단·치료·위암 관련성·위장관외 연관질환 5개 영역에서 70% 이상 합의로 권고 도출. 고용량 PPI 및 보노프라잔 기반 요법 지지, 비스무트 병용 확대, 고용량 이중요법 유효성 인정 등이 주요 개정 내용."},
+ {title:"Guidelines for Management of H. pylori Infection in Japan: 2024 Revised Edition",type:"진료지침",journal:"J Gastroenterol. 2026;61(7):841-862",author:"Isomoto H, et al.",cats:["Helicobacter pylori","PPI","P-CAB"],pmid:"PMID 41902905",link:"https://pubmed.ncbi.nlm.nih.gov/41902905/",date:"2026-07-01",abs:"일본 헬리코박터연구회(JSHR) 진료지침 5판. Minds 방법론·GRADE 기반, 수정 델파이로 합의 도출. 모든 감염 질환을 제균 적응증으로 유지, 진단에 핵산증폭검사 추가. 아목시실린·클래리트로마이신 1주 삼제요법에서 P-CAB이 PPI보다 우수한 제균율을 보인다는 근거 반영, 위암 예방 목적 조기 제균·청소년 검사·치료 전략 제시."},
+ {title:"Population PK Model for Vonoprazan in Pediatric Patients",type:"임상논문",journal:"CPT Pharmacometrics Syst Pharmacol. 2026;15(7):e70291",author:"Mulford DJ, et al.",cats:["GERD","P-CAB"],pmid:"PMID 42374963",link:"https://pubmed.ncbi.nlm.nih.gov/42374963/",date:"2026-07-01",abs:"성인 8건·청소년 1건·소아 1건 자료를 통합해 보노프라잔 소아 용량 설정용 2구획 집단약동학 모델 개발. 흡수속도의 연령 효과, 중심용적의 체중 효과가 주요 공변량. 시뮬레이션 결과 성인·청소년·소아 간 정상상태 노출 일관, 소아 용량이 성인 기준과 부합. 6–17세 소아·청소년 용량 설정 근거 제공."},
+ {title:"Endoscopic Cardia Constriction Ligation for Refractory GERD (Single-use vs Reusable Endoscope RCT Protocol)",type:"임상시험",journal:"Front Med (Lausanne). 2026;13:1832310",author:"Li RH, et al.",cats:["GERD","PPI","P-CAB"],pmid:"PMID 42422819",link:"https://pubmed.ncbi.nlm.nih.gov/42422819/",date:"2026-06-24",abs:"난치성 GERD 환자 대상 일회용 vs 재사용 내시경 분문 협착 결찰술(ECCL)을 비교하는 다기관 비열등성 RCT 프로토콜. 18–80세 98명을 1:1 배정. 1차 평가변수는 3·6개월 후 GERD-Q 4점 이상 감소, 2차로 안전성·PPI/P-CAB 완전 중단율 등. NCT07176221."},
+ {title:"Safety of High-Dose Dual Therapy for H. pylori in Patients with MAFLD",type:"임상논문",journal:"Front Pharmacol. 2026;17:1854790",author:"Zhang L, et al.",cats:["Helicobacter pylori","P-CAB"],pmid:"PMID 42403711",link:"https://pubmed.ncbi.nlm.nih.gov/42403711/",date:"2026-06-19",abs:"MAFLD 동반 H. pylori 감염 91명에서 고용량 이중요법(보노프라잔 20mg bid + 아목시실린 1.0g tid, 14일)의 안전성·유효성 평가 코호트. 지방간 경도·중등도·중증군 모두 제균율 89–93%로 군간 차이 없음. 일과성 경미한 간효소 상승 2례(2.2%), 중등도 이상 간손상 없음. 다양한 MAFLD 동반 환자에서 간안전성 양호."},
+ {title:"Fexuprazan Safety & Real-World Efficacy in CV Patients on Antithrombotic Therapy (FEXGARD Cohort)",type:"임상논문",journal:"Front Pharmacol. 2026;17:1738012",author:"Hwang YM, et al.",cats:["GERD","P-CAB"],pmid:"PMID 42367300",link:"https://pubmed.ncbi.nlm.nih.gov/42367300/",date:"2026-06-12",abs:"항혈전 치료를 받는 심혈관질환 환자 400명에서 P-CAB 펙수프라잔의 실사용 효과·안전성을 평가한 전향적 관찰연구(FEXGARD). 6개월 후 공복 가스트린 유의 상승(152.1→249.1 pg/mL, p<0.001), FSSG GERD 증상 유의 개선. 12개월 추적 위장관 출혈 0.5%. 70세 이상에서 가스트린 상승 폭이 커 면밀한 모니터링 필요."}
+];
+
+// filter buttons
+const types=["전체","임상논문","임상시험","진료지침"];
+const counts={};
+evidence.forEach(e=>counts[e.type]=(counts[e.type]||0)+1);
+const fbar=document.getElementById("filterbar");
+fbar.innerHTML=types.map((t,i)=>{
+  const c = t==="전체" ? evidence.length : (counts[t]||0);
+  return `<button class="fbtn${i===0?' active':''}" data-type="${t}">${t} <span style="opacity:.7">(${c})</span></button>`;
+}).join("");
+
+function render(filter){
+  const list = filter==="전체" ? evidence : evidence.filter(e=>e.type===filter);
+  document.getElementById("gallery").innerHTML=list.map((e,idx)=>`
+    <div class="ecard">
+      <div class="toprow">
+        <span class="tag ${typeMap[e.type]}">${e.type}</span>
+        <span class="date">📅 ${e.date}</span>
+      </div>
+      <h4>${e.title}</h4>
+      <div class="meta"><b>${e.author}</b> · ${e.journal}</div>
+      <div class="cats">${e.cats.map(c=>`<span class="cat">${c}</span>`).join("")}</div>
+      <div class="abs clamp" id="abs-${filter}-${idx}">${e.abs}</div>
+      <div class="cardfoot">
+        <span class="pmid">${e.pmid}</span>
+        <span>
+          <button class="toggle" onclick="toggleAbs('abs-${filter}-${idx}',this)">더보기</button>
+          &nbsp;·&nbsp;
+          <a class="src-link" href="${e.link}" target="_blank">원문 →</a>
+        </span>
+      </div>
+    </div>`).join("");
+}
+function toggleAbs(id,btn){
+  const el=document.getElementById(id);
+  el.classList.toggle("clamp");
+  btn.textContent = el.classList.contains("clamp") ? "더보기" : "접기";
+}
+fbar.addEventListener("click",ev=>{
+  const b=ev.target.closest(".fbtn"); if(!b) return;
+  document.querySelectorAll(".fbtn").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  render(b.dataset.type);
+});
+render("전체");
+</script>
+</body>
+</html>
