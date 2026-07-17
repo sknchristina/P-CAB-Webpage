@@ -215,7 +215,8 @@ def build_evidence(pages):
         author = prop_text(props, "저자")
         pmid = prop_text(props, "PMID") or prop_text(props, "pmid")
         link = prop_url(props, "링크")
-        date = prop_date(props, "등록일")
+        date = prop_date(props, "등록일")       # 정렬 기준(최신 등록순)
+        pubdate = prop_date(props, "출판일자")   # 화면 표시용(실제 출판일)
         abstract = prop_text(props, "초록요약")
 
         if not title:
@@ -224,16 +225,19 @@ def build_evidence(pages):
         items.append({
             "title": title, "type": rtype, "journal": journal,
             "author": author, "cats": cats, "pmid": pmid,
-            "link": link, "date": date, "abs": abstract,
+            "link": link, "date": date, "pubdate": pubdate, "abs": abstract,
         })
 
     # 등록일 내림차순 정렬 (빈 날짜는 맨 뒤로) - 실제 저널 발행일이 아니라
     # Notion DB에 등록(발견)된 시점 기준으로 "최신 문헌" 목록을 만든다.
+    # (화면에 표시되는 날짜는 pubdate=출판일자이며, 정렬 순서와는 별개다.)
     items.sort(key=lambda x: x["date"] or "0000-00-00", reverse=True)
 
     lines = []
     for it in items:
         cats_js = "[" + ",".join(js_str(c) for c in it["cats"]) + "]"
+        # 출판일자가 비어 있으면 등록일로 대체 표시
+        display_date = it["pubdate"] or it["date"]
         lines.append(
             "{"
             f'title:{js_str(it["title"])},'
@@ -243,7 +247,7 @@ def build_evidence(pages):
             f'cats:{cats_js},'
             f'pmid:{js_str(it["pmid"])},'
             f'link:{js_str(it["link"])},'
-            f'date:{js_str(it["date"])},'
+            f'date:{js_str(display_date)},'
             f'abs:{js_str(it["abs"])}'
             "}"
         )
