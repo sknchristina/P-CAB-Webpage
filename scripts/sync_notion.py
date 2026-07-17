@@ -228,10 +228,11 @@ def build_evidence(pages):
             "link": link, "date": date, "pubdate": pubdate, "abs": abstract,
         })
 
-    # 등록일 내림차순 정렬 (빈 날짜는 맨 뒤로) - 실제 저널 발행일이 아니라
-    # Notion DB에 등록(발견)된 시점 기준으로 "최신 문헌" 목록을 만든다.
-    # (화면에 표시되는 날짜는 pubdate=출판일자이며, 정렬 순서와는 별개다.)
-    items.sort(key=lambda x: x["date"] or "0000-00-00", reverse=True)
+    # 정렬: 1차 출판일자(실제 발행일) 내림차순, 2차 등록일 내림차순(동점 시 보조 기준).
+    items.sort(
+        key=lambda x: (x["pubdate"] or "0000-00-00", x["date"] or "0000-00-00"),
+        reverse=True,
+    )
 
     lines = []
     for it in items:
