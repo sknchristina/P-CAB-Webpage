@@ -1,30 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Notion에서 두 종류의 소스를 가져와 index.html을 갱신한다.
+Notion에서 두 종류의 소스를 가져와 index.html을 갱신한다. (2차 재설계 버전)
 
-1) 데이터베이스("위산분비질환 문헌 업데이트")
-   - Evidence Categories 막대그래프
-   - Latest P-CAB Evidence 갤러리
+페이지에는 이제 4개 섹션 + 표지만 존재한다:
+  1) Evidence Landscape        - 표
+  2) DB 기반 최신 동향 분석      - 인트로 콜아웃 + N개 하위 subsection
+                                  (heading_3로 시작, 그 아래 column_list 또는
+                                  table이 따라오는 구조) + 마지막 트레일링 콜아웃
+  3) Monthly Bottom Line        - 라벨:내용 형태의 여러 줄로 된 콜아웃
+  4) 위산분비질환 문헌 업데이트   - Notion 데이터베이스(P-CAB 카테고리) 갤러리
 
-2) 메인 페이지("P-CAB 현황 및 임상적 시사점") 본문 블록
-   - Hero 소개 문구
-   - Executive Snapshot (3개 카드)
-   - P-CAB Evidence Map (표)
-   - Clinical Implications (3개 카드)
-   - Strategic Watchlist (체크리스트)
-   - Bottom Line
+동작 원리: 각 섹션을 "통째로" 새로 생성해서, index.html 안의
+`<!-- 섹션이름 -->` 주석부터 그 섹션의 `</section>`까지를 전부 교체한다.
+(개별 조각을 정규식으로 patch하는 대신, 섹션 전체를 재생성하므로
+Notion 쪽 하위 구조가 바뀌어도 비교적 안정적으로 반영된다.)
 
 환경변수:
   NOTION_TOKEN   - Notion Integration access token (필수)
   DATABASE_ID    - Notion 데이터베이스 ID (필수)
-  PAGE_ID        - Notion 메인 페이지 ID (선택. 없으면 1)만 수행)
+  PAGE_ID        - Notion 메인 페이지 ID (선택. 없으면 DB 갤러리만 갱신)
   INDEX_HTML     - 수정할 html 경로 (기본값 index.html)
-
-주의:
-  PAGE_ID를 사용하려면, 메인 페이지에도 Integration("PCAB landscape Sync")을
-  공유(연결)해줘야 한다. 데이터베이스에만 연결되어 있으면 페이지 본문은
-  읽을 수 없다(404).
 """
 
 import os
@@ -45,19 +41,6 @@ INDEX_HTML = os.environ.get("INDEX_HTML", "index.html")
 NOTION_VERSION = "2022-06-28"
 API_BASE = "https://api.notion.com/v1"
 
-# 사이트에 표시할 카테고리 순서(현재 index.html과 동일한 순서 유지)
-CATEGORY_ORDER = [
-    "Helicobacter pylori", "동반질환", "GERD", "PPI",
-    "P-CAB", "위염", "위궤양(GU)", "ERD",
-]
-
-# 자료유형(select) → 사이트 표기값 매핑 (필요시 수정)
-TYPE_MAP = {
-    "임상논문": "임상논문",
-    "임상시험": "임상시험",
-    "진료지침": "진료지침",
-}
-
 
 def die(msg):
     print(f"[ERROR] {msg}", file=sys.stderr)
@@ -68,9 +51,7 @@ def notion_request(path, payload=None):
     url = f"{API_BASE}{path}"
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     req = urllib.request.Request(
-        url,
-        data=data,
-        method="POST" if payload is not None else "GET",
+        url, data=data, method="POST" if payload is not None else "GET",
         headers={
             "Authorization": f"Bearer {NOTION_TOKEN}",
             "Notion-Version": NOTION_VERSION,
@@ -88,12 +69,8 @@ def notion_request(path, payload=None):
 def notion_get(path):
     url = f"{API_BASE}{path}"
     req = urllib.request.Request(
-        url,
-        method="GET",
-        headers={
-            "Authorization": f"Bearer {NOTION_TOKEN}",
-            "Notion-Version": NOTION_VERSION,
-        },
+        url, method="GET",
+        headers={"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": NOTION_VERSION},
     )
     try:
         with urllib.request.urlopen(req) as resp:
@@ -102,6 +79,10 @@ def notion_get(path):
         body = e.read().decode("utf-8", errors="replace")
         die(f"Notion API 오류 {e.code}: {body}")
 
+
+# =========================================================================
+# 1) 데이터베이스 -> 문헌 갤러리(evidence 배열)
+# =========================================================================
 
 def fetch_all_pages(database_id):
     results = []
@@ -114,16 +95,13 @@ def fetch_all_pages(database_id):
         results.extend(data.get("results", []))
         if data.get("has_more"):
             cursor = data.get("next_cursor")
-            time.sleep(0.3)  # rate limit 완화
+            time.sleep(0.3)
         else:
             break
     return results
 
 
-# ---------- Notion property 값 추출 헬퍼 ----------
-
 def prop_text(props, name):
-    """title / rich_text 계열에서 순수 텍스트 추출"""
     p = props.get(name)
     if not p:
         return ""
@@ -172,33 +150,8 @@ def prop_url(props, name):
     return prop_text(props, name)
 
 
-# ---------- 메인 변환 로직 ----------
-
 def js_str(s):
-    """JS 문자열 리터럴로 안전하게 이스케이프"""
     return json.dumps(s if s is not None else "", ensure_ascii=False)
-
-
-def build_categories(pages):
-    counts = {}
-    for pg in pages:
-        props = pg.get("properties", {})
-        cats = prop_multiselect(props, "카테고리")
-        for c in cats:
-            counts[c] = counts.get(c, 0) + 1
-
-    ordered = [c for c in CATEGORY_ORDER if c in counts]
-    # 정의된 순서에 없는 새 카테고리는 뒤에 개수 내림차순으로 추가
-    extra = sorted(
-        [c for c in counts if c not in CATEGORY_ORDER],
-        key=lambda c: -counts[c],
-    )
-    final_order = ordered + extra
-
-    lines = []
-    for c in final_order:
-        lines.append(f'  {{n:{js_str(c)},v:{counts[c]}}}')
-    return "[\n" + ",\n".join(lines) + "\n]"
 
 
 def build_evidence(pages):
@@ -215,8 +168,8 @@ def build_evidence(pages):
         author = prop_text(props, "저자")
         pmid = prop_text(props, "PMID") or prop_text(props, "pmid")
         link = prop_url(props, "링크")
-        date = prop_date(props, "등록일")       # 정렬 기준(최신 등록순)
-        pubdate = prop_date(props, "출판일자")   # 화면 표시용(실제 출판일)
+        date = prop_date(props, "등록일")       # 보조 정렬 기준
+        pubdate = prop_date(props, "출판일자")   # 주 정렬 기준 + 화면 표시용
         abstract = prop_text(props, "초록요약")
 
         if not title:
@@ -228,7 +181,7 @@ def build_evidence(pages):
             "link": link, "date": date, "pubdate": pubdate, "abs": abstract,
         })
 
-    # 정렬: 1차 출판일자(실제 발행일) 내림차순, 2차 등록일 내림차순(동점 시 보조 기준).
+    # 정렬: 1차 출판일자(실제 발행일) 내림차순, 2차 등록일 내림차순.
     items.sort(
         key=lambda x: (x["pubdate"] or "0000-00-00", x["date"] or "0000-00-00"),
         reverse=True,
@@ -237,7 +190,6 @@ def build_evidence(pages):
     lines = []
     for it in items:
         cats_js = "[" + ",".join(js_str(c) for c in it["cats"]) + "]"
-        # 출판일자가 비어 있으면 등록일로 대체 표시
         display_date = it["pubdate"] or it["date"]
         lines.append(
             "{"
@@ -255,42 +207,17 @@ def build_evidence(pages):
     return "[\n " + ",\n ".join(lines) + "\n]"
 
 
-def kst_today_str():
-    """실행 시점(스크립트가 돌아간 날) 기준 한국시간(KST) 날짜를 YYYY-MM-DD로 반환"""
-    now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
-    return now_kst.strftime("%Y-%m-%d")
-
-
-def sync_footer_date(html):
-    """footer의 '데이터 기준일 YYYY-MM-DD'를 오늘 날짜(KST)로 자동 갱신"""
-    today = kst_today_str()
-    pattern = re.compile(r"데이터 기준일 \d{4}-\d{2}-\d{2}")
-    new_html, n = pattern.subn(f"데이터 기준일 {today}", html, count=1)
+def replace_evidence_array(html, new_array_literal):
+    pattern = re.compile(r"const\s+evidence\s*=\s*\[.*?\];", re.DOTALL)
+    new_html, n = pattern.subn(f"const evidence={new_array_literal};", html, count=1)
     if n == 0:
-        print("[WARN] '데이터 기준일' 표기를 찾지 못해 갱신을 건너뜁니다.")
-        return html
-    print(f"[INFO] 데이터 기준일을 {today}로 갱신했습니다.")
-    return new_html
-
-
-def replace_block(html, var_name, new_array_literal):
-    """`const <var_name>=[ ... ];` 블록을 통째로 새 배열로 교체"""
-    pattern = re.compile(
-        r"const\s+" + re.escape(var_name) + r"\s*=\s*\[.*?\];",
-        re.DOTALL,
-    )
-    replacement = f"const {var_name}={new_array_literal};"
-    new_html, n = pattern.subn(replacement, html, count=1)
-    if n == 0:
-        die(f"'{var_name}' 배열 블록을 index.html에서 찾지 못했습니다. "
-            f"HTML 구조가 변경되었는지 확인하세요.")
+        die("'evidence' 배열 블록을 index.html에서 찾지 못했습니다.")
     return new_html
 
 
 # =========================================================================
-# 2) 메인 페이지 본문 블록 동기화
-#    (Hero 소개문 / Executive Snapshot / Evidence Map / Clinical Implications
-#     / Strategic Watchlist / Bottom Line)
+# 2) 메인 페이지 본문 -> Evidence Landscape / DB 기반 최신 동향 분석 /
+#    Monthly Bottom Line
 # =========================================================================
 
 NO_RECURSE_TYPES = {"child_database", "child_page", "link_to_page"}
@@ -312,7 +239,6 @@ def fetch_children(block_id):
 
 
 def fetch_tree(block_id, depth=0, max_depth=6):
-    """block_id의 자식 블록을 재귀적으로 모두 가져와 각 블록에 children 키를 채운다."""
     children = fetch_children(block_id)
     if depth < max_depth:
         for b in children:
@@ -328,7 +254,6 @@ def rt_plain(rich_text):
 
 
 def rt_html(rich_text):
-    """rich_text 배열을 안전한 HTML로 변환 (bold만 <b>로 보존)"""
     out = []
     for x in (rich_text or []):
         t = htmlmod.escape(x.get("plain_text", ""))
@@ -339,7 +264,6 @@ def rt_html(rich_text):
 
 
 def block_text(block):
-    """블록 타입별 rich_text를 꺼낸다."""
     t = block.get("type")
     data = block.get(t, {})
     return data.get("rich_text", [])
@@ -353,8 +277,7 @@ def find_heading_index(blocks, contains):
     return -1
 
 
-def next_block_after(blocks, idx, target_type=None):
-    """idx 다음에 나오는 첫 번째 non-divider 블록을 반환 (타입은 호출부에서 검증)"""
+def next_block_after(blocks, idx):
     for b in blocks[idx + 1:]:
         if b.get("type") == "divider":
             continue
@@ -363,7 +286,6 @@ def next_block_after(blocks, idx, target_type=None):
 
 
 def collect_bullets_recursive(block, out):
-    """블록 트리에서 bulleted_list_item 텍스트를 문서 순서대로 전부 수집"""
     if block.get("type") == "bulleted_list_item":
         out.append(rt_html(block_text(block)))
     for child in block.get("children", []):
@@ -371,8 +293,6 @@ def collect_bullets_recursive(block, out):
 
 
 def parse_card_column(col):
-    """Executive Snapshot / Clinical Implications의 column 하나를 파싱해
-    (아이콘+제목 HTML, 불릿 HTML 리스트) 를 반환"""
     title_html = ""
     kids = col.get("children", [])
     if kids:
@@ -384,203 +304,285 @@ def parse_card_column(col):
             title_html = f"{icon_ch} {title_txt}".strip()
         elif first.get("type") in ("heading_1", "heading_2", "heading_3"):
             title_html = rt_html(block_text(first))
-
     bullets = []
     for k in kids:
         collect_bullets_recursive(k, bullets)
     return title_html, bullets
 
 
-def build_cards3_html(blocks, heading_text, card_class):
-    """column_list 기반 3카드 섹션(HTML)을 만든다. 실패하면 None."""
-    hidx = find_heading_index(blocks, heading_text)
+def level_class(text):
+    """🟢🟡🟠🔴 등 색상 표기를 CSS 클래스로 매핑"""
+    if "높음" in text and "중간" not in text:
+        return "high"
+    if "중간" in text:
+        return "mid"
+    return "low"
+
+
+LEVEL_EMOJIS = ("🟢", "🟡", "🟠", "🔴")
+
+
+def gen_generic_table(table_block):
+    rows = table_block.get("children", [])
+    if len(rows) < 1:
+        return None
+    header_cells = rows[0].get("table_row", {}).get("cells", [])
+    th_html = "".join(f"<th>{rt_html(c)}</th>" for c in header_cells)
+
+    body_rows = []
+    for r in rows[1:]:
+        cells = r.get("table_row", {}).get("cells", [])
+        tds = []
+        for i, c in enumerate(cells):
+            text_html = rt_html(c)
+            text_plain = rt_plain(c)
+            if i == 0:
+                tds.append(f'<td class="area">{text_html}</td>')
+            elif any(sym in text_plain for sym in LEVEL_EMOJIS):
+                cls = level_class(text_plain)
+                tds.append(f'<td><span class="lvl {cls}">{text_html}</span></td>')
+            else:
+                tds.append(f"<td>{text_html}</td>")
+        body_rows.append("<tr>" + "".join(tds) + "</tr>")
+
+    if not body_rows:
+        return None
+    return (
+        '<table class="evmap">\n<thead><tr>' + th_html + "</tr></thead>\n"
+        "<tbody>\n" + "\n".join(body_rows) + "\n</tbody>\n</table>"
+    )
+
+
+def replace_full_section(html, comment_marker, new_section_html, label=None):
+    label = label or comment_marker
+    pattern = re.compile(re.escape(f"<!-- {comment_marker} -->") + r".*?</section>", re.DOTALL)
+    if not pattern.search(html):
+        print(f"[WARN] '{label}' 섹션 마커를 index.html에서 찾지 못해 건너뜁니다.")
+        return html
+    return pattern.sub(lambda m: new_section_html, html, count=1)
+
+
+# ---- Evidence Landscape ----
+
+def gen_evidence_landscape_section(blocks):
+    hidx = find_heading_index(blocks, "Evidence Landscape")
     if hidx == -1:
+        print("[WARN] 'Evidence Landscape' 제목을 Notion 페이지에서 찾지 못했습니다.")
         return None
-    col_list = next_block_after(blocks, hidx, target_type="column_list")
-    if not col_list or col_list.get("type") != "column_list":
+    table_block = next_block_after(blocks, hidx)
+    if not table_block or table_block.get("type") != "table":
+        print("[WARN] 'Evidence Landscape' 표를 찾지 못했습니다.")
+        return None
+    table_html = gen_generic_table(table_block)
+    if not table_html:
         return None
 
-    cards = []
-    for col in col_list.get("children", []):
-        if col.get("type") != "column":
-            continue
-        title_html, bullets = parse_card_column(col)
-        if not title_html:
-            continue
-        lis = "\n          ".join(f"<li>{b}</li>" for b in bullets)
-        cards.append(
-            f'      <div class="{card_class}">\n'
-            f'        <h3>{title_html}</h3>\n'
-            f'        <ul>\n          {lis}\n        </ul>\n'
-            f'      </div>'
+    return (
+        "<!-- Evidence Landscape -->\n"
+        '<section class="section">\n'
+        '  <div class="wrap">\n'
+        '    <h2 class="sec-title"><span class="en">Evidence Landscape</span>임상영역별 근거 지도</h2>\n'
+        f"    {table_html}\n"
+        "  </div>\n"
+        "</section>"
+    )
+
+
+# ---- DB 기반 최신 동향 분석 ----
+
+def gen_trend_analysis_section(blocks):
+    hidx = find_heading_index(blocks, "DB 기반 최신 동향 분석")
+    if hidx == -1:
+        print("[WARN] 'DB 기반 최신 동향 분석' 제목을 Notion 페이지에서 찾지 못했습니다.")
+        return None
+
+    intro_block = next_block_after(blocks, hidx)
+    intro_html = ""
+    start_scan = hidx + 1
+    if intro_block is not None and intro_block.get("type") == "callout":
+        intro_html = rt_html(block_text(intro_block))
+        try:
+            start_scan = blocks.index(intro_block) + 1
+        except ValueError:
+            pass
+
+    subsections = []
+    current_title = None
+    current_body = []
+    trailing_bl_html = ""
+
+    def flush():
+        if current_title is not None:
+            subsections.append(
+                f'<div class="subsection"><h3 class="subhead">{current_title}</h3>'
+                + "".join(current_body) + "</div>"
+            )
+
+    i = start_scan
+    while i < len(blocks):
+        b = blocks[i]
+        t = b.get("type")
+        if t in ("heading_1", "heading_2"):
+            break
+        if t == "heading_3":
+            flush()
+            current_title = rt_html(block_text(b))
+            current_body = []
+        elif t == "column_list":
+            cards = []
+            for col in b.get("children", []):
+                if col.get("type") != "column":
+                    continue
+                title_html, bullets = parse_card_column(col)
+                if not title_html:
+                    continue
+                lis = "".join(f"<li>{x}</li>" for x in bullets)
+                cards.append(f'<div class="icard"><h3>{title_html}</h3><ul>{lis}</ul></div>')
+            if cards:
+                current_body.append('<div class="cards3">' + "".join(cards) + "</div>")
+        elif t == "table":
+            tbl = gen_generic_table(b)
+            if tbl:
+                current_body.append(tbl)
+        elif t == "callout":
+            trailing_bl_html = rt_html(block_text(b))
+        i += 1
+    flush()
+
+    if not subsections:
+        print("[WARN] 'DB 기반 최신 동향 분석' 하위 subsection을 하나도 못 찾았습니다.")
+        return None
+
+    bl_block = ""
+    if trailing_bl_html:
+        bl_block = (
+            '<div class="subsection"><div class="bottomline">'
+            "<h3>🎯 DB 기반 Bottom Line</h3>"
+            f"<p>{trailing_bl_html}</p></div></div>"
         )
-    if not cards:
-        return None
-    return '<div class="cards3">\n' + "\n".join(cards) + "\n    </div>"
 
+    return (
+        "<!-- DB 기반 최신 동향 분석 -->\n"
+        '<section class="section" style="background:#ffe6cc;">\n'
+        '  <div class="wrap">\n'
+        '    <h2 class="sec-title"><span class="en">DB 기반 최신 동향 분석</span>Evidence Trend Analysis</h2>\n'
+        f'    <div class="analysis-note">{intro_html}</div>\n'
+        + "".join(subsections) + bl_block +
+        "\n  </div>\n</section>"
+    )
+
+
+# ---- Monthly Bottom Line ----
+
+def gen_monthly_bottomline_section(blocks):
+    hidx = find_heading_index(blocks, "Monthly Bottom Line")
+    if hidx == -1:
+        print("[WARN] 'Monthly Bottom Line' 제목을 Notion 페이지에서 찾지 못했습니다.")
+        return None
+    callout = next_block_after(blocks, hidx)
+    if not callout or callout.get("type") != "callout":
+        print("[WARN] 'Monthly Bottom Line' 콜아웃을 찾지 못했습니다.")
+        return None
+
+    full = rt_plain(block_text(callout)).replace("<br>", "\n").replace("<br/>", "\n")
+    lines = [l.strip() for l in full.split("\n") if l.strip()]
+    if not lines:
+        return None
+
+    parts = []
+    for line in lines:
+        m = re.match(r"^([^:：]{1,24})[:：]\s*(.*)$", line)
+        if m:
+            label = htmlmod.escape(m.group(1).strip())
+            content = htmlmod.escape(m.group(2).strip())
+            parts.append(f'<p class="bl-item"><b>{label}</b>: {content}</p>')
+        else:
+            parts.append(f'<p class="bl-item">{htmlmod.escape(line)}</p>')
+
+    ref_html = (
+        '<div class="bl-ref">Notion 원본 페이지에서 관련 최신 문헌을 함께 확인할 수 있습니다: '
+        f'<a href="https://app.notion.com/p/{PAGE_ID}" target="_blank">Notion에서 보기 →</a></div>'
+    )
+
+    return (
+        "<!-- Monthly Bottom Line -->\n"
+        '<section class="section" style="background:#ffe6cc;">\n'
+        '  <div class="wrap">\n'
+        '    <div class="bottomline">\n'
+        "      <h3>🎯 Monthly Bottom Line</h3>\n"
+        + "\n".join(parts) + "\n"
+        + ref_html +
+        "\n    </div>\n  </div>\n</section>"
+    )
+
+
+# ---- Hero 소개 문구 ----
 
 def build_hero_lead(blocks):
-    """맨 위 인트로 callout에서 두번째 줄(소개 문구)을 추출"""
     for b in blocks:
         if b.get("type") == "callout":
             full = rt_plain(block_text(b))
             parts = full.split("\n", 1)
-            if len(parts) > 1:
-                return htmlmod.escape(parts[1].strip())
-            return htmlmod.escape(full.strip())
+            return htmlmod.escape((parts[1] if len(parts) > 1 else full).strip())
         if b.get("type") in ("heading_1", "heading_2", "heading_3"):
-            break  # 첫 heading 전에 callout이 없으면 포기
-    return None
-
-
-LEVEL_HIGH = {"높음"}
-LEVEL_LOW = {"낮음"}
-
-
-def level_class(text):
-    if "낮음" in text and "중간" not in text and "높음" not in text:
-        return "low"
-    if "높음" in text and "중간" not in text:
-        return "high"
-    return "mid"
-
-
-def build_evidence_map_html(blocks):
-    hidx = find_heading_index(blocks, "P-CAB Evidence Map")
-    if hidx == -1:
-        return None
-    table = next_block_after(blocks, hidx, target_type="table")
-    if not table or table.get("type") != "table":
-        return None
-
-    rows = table.get("children", [])
-    if len(rows) < 2:
-        return None
-
-    body_rows = []
-    for r in rows[1:]:  # 첫 행은 헤더이므로 skip
-        cells = r.get("table_row", {}).get("cells", [])
-        if len(cells) < 4:
-            continue
-        area = rt_html(cells[0])
-        level_txt = rt_plain(cells[1])
-        level_html = rt_html(cells[1])
-        point = rt_html(cells[2])
-        interp = rt_html(cells[3])
-        cls = level_class(level_txt)
-        body_rows.append(
-            f'<tr><td class="area">{area}</td>'
-            f'<td><span class="lvl {cls}">{level_html}</span></td>'
-            f'<td>{point}</td><td>{interp}</td></tr>'
-        )
-    if not body_rows:
-        return None
-    return "\n        ".join(body_rows)
-
-
-def build_watchlist_html(blocks):
-    hidx = find_heading_index(blocks, "Strategic Watchlist")
-    if hidx == -1:
-        return None
-    items = []
-    for b in blocks[hidx + 1:]:
-        if b.get("type") == "divider":
             break
-        if b.get("type") == "to_do":
-            items.append(rt_html(block_text(b)))
-    if not items:
-        return None
-    lines = "\n      ".join(
-        f'<div class="witem"><span class="dot"></span>{t}</div>' for t in items
-    )
-    return lines
-
-
-def build_bottom_line_html(blocks):
-    hidx = find_heading_index(blocks, "Bottom Line")
-    if hidx == -1:
-        return None
-    callout = next_block_after(blocks, hidx, target_type="callout")
-    if not callout or callout.get("type") != "callout":
-        return None
-    return rt_html(block_text(callout))
-
-
-def replace_section_html(html, label, open_marker_regex, close_marker, new_inner):
-    """open_marker_regex(정규식, 캡처 없음) 바로 뒤 ~ close_marker(리터럴 문자열) 앞까지를
-    new_inner로 교체한다. 못 찾으면 원본 그대로 반환하고 경고만 출력."""
-    m = re.search(open_marker_regex, html, re.DOTALL)
-    if not m:
-        print(f"[WARN] '{label}' 시작 위치를 찾지 못해 건너뜁니다.")
-        return html
-    start = m.end()
-    end = html.find(close_marker, start)
-    if end == -1:
-        print(f"[WARN] '{label}' 종료 위치를 찾지 못해 건너뜁니다.")
-        return html
-    return html[:start] + new_inner + html[end:]
+    return None
 
 
 def sync_page_content(html, page_id):
     print(f"[INFO] Notion 페이지 본문 조회 중... ({page_id})")
-    blocks = fetch_tree(page_id, max_depth=5)
+    blocks = fetch_tree(page_id, max_depth=6)
     print(f"[INFO] 페이지 최상위 블록 {len(blocks)}개 수집.")
 
-    # 1) Hero 소개 문구
     lead = build_hero_lead(blocks)
     if lead:
-        html = replace_section_html(
-            html, "Hero 소개 문구",
-            r'<p class="lead">', r'</p>', lead,
-        )
+        m = re.search(r'<p class="lead">', html)
+        if m:
+            start = m.end()
+            end = html.find("</p>", start)
+            if end != -1:
+                html = html[:start] + lead + html[end:]
+        else:
+            print("[WARN] Hero 소개 문구 위치를 찾지 못해 건너뜁니다.")
 
-    # 2) Executive Snapshot (accent-top 카드)
-    exec_html = build_cards3_html(blocks, "Executive Snapshot", "icard accent-top")
-    if exec_html:
-        html = replace_section_html(
-            html, "Executive Snapshot",
-            r'<span class="en">Executive Snapshot</span>[^<]*</h2>\s*',
-            "\n  </div>\n</section>",
-            exec_html + "\n  ",
-        )
+    ev_html = gen_evidence_landscape_section(blocks)
+    if ev_html:
+        html = replace_full_section(html, "Evidence Landscape", ev_html)
 
-    # 3) P-CAB Evidence Map 표
-    map_rows = build_evidence_map_html(blocks)
-    if map_rows:
-        html = replace_section_html(
-            html, "P-CAB Evidence Map",
-            r'<tbody>\s*', "</tbody>", map_rows + "\n      ",
-        )
+    trend_html = gen_trend_analysis_section(blocks)
+    if trend_html:
+        html = replace_full_section(html, "DB 기반 최신 동향 분석", trend_html)
 
-    # 4) Clinical Implications (accent-top 없는 카드)
-    ci_html = build_cards3_html(blocks, "Clinical Implications", "icard")
-    if ci_html:
-        html = replace_section_html(
-            html, "Clinical Implications",
-            r'<span class="en">Clinical Implications</span>[^<]*</h2>\s*',
-            "\n  </div>\n</section>",
-            ci_html + "\n  ",
-        )
-
-    # 5) Strategic Watchlist
-    watch_html = build_watchlist_html(blocks)
-    if watch_html:
-        html = replace_section_html(
-            html, "Strategic Watchlist",
-            r'<div class="watch">\s*', "\n  </div>\n</section>",
-            "\n      " + watch_html + "\n    </div>",
-        )
-
-    # 6) Bottom Line
-    bl_html = build_bottom_line_html(blocks)
+    bl_html = gen_monthly_bottomline_section(blocks)
     if bl_html:
-        html = replace_section_html(
-            html, "Bottom Line",
-            r'<h3>🎯 Bottom Line</h3>\s*<p>', r'</p>', bl_html,
-        )
+        html = replace_full_section(html, "Monthly Bottom Line", bl_html)
 
     return html
 
+
+# =========================================================================
+# 3) footer 날짜 자동 갱신
+# =========================================================================
+
+def kst_today_str():
+    now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
+    return now_kst.strftime("%Y-%m-%d")
+
+
+def sync_footer_date(html):
+    today = kst_today_str()
+    pattern = re.compile(r"데이터 기준일 \d{4}-\d{2}-\d{2}")
+    new_html, n = pattern.subn(f"데이터 기준일 {today}", html, count=1)
+    if n == 0:
+        print("[WARN] '데이터 기준일' 표기를 찾지 못해 갱신을 건너뜁니다.")
+        return html
+    print(f"[INFO] 데이터 기준일을 {today}로 갱신했습니다.")
+    return new_html
+
+
+# =========================================================================
+# main
+# =========================================================================
 
 def main():
     if not NOTION_TOKEN:
@@ -594,7 +596,6 @@ def main():
     pages = fetch_all_pages(DATABASE_ID)
     print(f"[INFO] 총 {len(pages)}건의 문헌을 가져왔습니다.")
 
-    categories_js = build_categories(pages)
     evidence_js = build_evidence(pages)
     evidence_count = evidence_js.count("title:")
     print(f"[INFO] P-CAB 카테고리 문헌 {evidence_count}건을 갤러리에 반영합니다.")
@@ -602,14 +603,12 @@ def main():
     with open(INDEX_HTML, "r", encoding="utf-8") as f:
         html = f.read()
 
-    html = replace_block(html, "categories", categories_js)
-    html = replace_block(html, "evidence", evidence_js)
+    html = replace_evidence_array(html, evidence_js)
 
     if PAGE_ID:
         html = sync_page_content(html, PAGE_ID)
     else:
-        print("[INFO] PAGE_ID가 설정되지 않아 페이지 본문(Executive Snapshot 등) "
-              "동기화는 건너뜁니다.")
+        print("[INFO] PAGE_ID가 설정되지 않아 페이지 본문 동기화는 건너뜁니다.")
 
     html = sync_footer_date(html)
 
