@@ -500,8 +500,8 @@ def gen_monthly_bottomline_section(blocks):
             parts.append(f'<p class="bl-item">{htmlmod.escape(line)}</p>')
 
     ref_html = (
-        '<div class="bl-ref">Notion 원본 페이지에서 관련 최신 문헌을 함께 확인할 수 있습니다: '
-        f'<a href="https://app.notion.com/p/{PAGE_ID}" target="_blank">Notion에서 보기 →</a></div>'
+        '<div class="bl-ref">Notion 문헌 데이터베이스에서 관련 최신 문헌을 함께 확인할 수 있습니다: '
+        f'<a href="https://app.notion.com/p/{DATABASE_ID}" target="_blank">문헌 DB에서 보기 →</a></div>'
     )
 
     return (
