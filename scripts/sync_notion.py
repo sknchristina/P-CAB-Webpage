@@ -222,6 +222,10 @@ def replace_evidence_array(html, new_array_literal):
 
 NO_RECURSE_TYPES = {"child_database", "child_page", "link_to_page"}
 
+# "DB 기반 최신 동향 분석" 하위 subsection 중, 제목에 아래 문자열이 포함되면
+# 웹사이트에는 숨기고 건너뛴다. (Notion에는 그대로 남아있어도 무방)
+HIDDEN_SUBSECTIONS = ["전략적 시사점"]
+
 
 def fetch_children(block_id):
     results = []
@@ -413,6 +417,9 @@ def gen_trend_analysis_section(blocks):
 
     def flush():
         if current_title is not None:
+            if any(kw in current_title for kw in HIDDEN_SUBSECTIONS):
+                print(f"[INFO] '{current_title}' subsection은 숨김 설정으로 건너뜁니다.")
+                return
             subsections.append(
                 f'<div class="subsection"><h3 class="subhead">{current_title}</h3>'
                 + "".join(current_body) + "</div>"
